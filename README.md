@@ -138,6 +138,10 @@ Key details:
 
 For technical details on the auth architecture, see [docs/authentication.md](docs/authentication.md).
 
+### Configuration
+
+- `MONARCH_MCP_TIMEOUT_SECS` — GraphQL client timeout in seconds for calls to the Monarch API (default `30`). Raise this if you see `TimeoutError` on slower operations, e.g. transaction updates.
+
 ### Usage Examples
 
 ```
