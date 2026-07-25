@@ -27,14 +27,18 @@ def _get_client_timeout_secs() -> int:
     if raw is None:
         return DEFAULT_TIMEOUT_SECS
     try:
-        return int(raw)
+        value = int(raw)
     except ValueError:
+        value = None
+
+    if value is None or value <= 0:
         logger.warning(
             "Invalid MONARCH_MCP_TIMEOUT_SECS=%r, falling back to %ds",
             raw,
             DEFAULT_TIMEOUT_SECS,
         )
         return DEFAULT_TIMEOUT_SECS
+    return value
 
 
 class SecureMonarchSession:

@@ -1,4 +1,4 @@
-"""SecureMonarchSession unit tests (19 tests).
+"""SecureMonarchSession unit tests (21 tests).
 
 Covers save/load/delete token, get_authenticated_client,
 save_authenticated_session, and _cleanup_old_session_files.
@@ -137,6 +137,30 @@ def test_get_client_custom_timeout_env(session, monkeypatch):
 
 def test_get_client_invalid_timeout_env_falls_back(session, monkeypatch):
     monkeypatch.setenv("MONARCH_MCP_TIMEOUT_SECS", "not-a-number")
+    with (
+        patch("monarch_mcp.secure_session.keyring") as mock_kr,
+        patch("monarch_mcp.secure_session.MonarchMoney") as mock_cls,
+    ):
+        mock_kr.get_password.return_value = "tok-abc"
+        session.get_authenticated_client()
+
+    mock_cls.assert_called_once_with(token="tok-abc", timeout=30)
+
+
+def test_get_client_zero_timeout_env_falls_back(session, monkeypatch):
+    monkeypatch.setenv("MONARCH_MCP_TIMEOUT_SECS", "0")
+    with (
+        patch("monarch_mcp.secure_session.keyring") as mock_kr,
+        patch("monarch_mcp.secure_session.MonarchMoney") as mock_cls,
+    ):
+        mock_kr.get_password.return_value = "tok-abc"
+        session.get_authenticated_client()
+
+    mock_cls.assert_called_once_with(token="tok-abc", timeout=30)
+
+
+def test_get_client_negative_timeout_env_falls_back(session, monkeypatch):
+    monkeypatch.setenv("MONARCH_MCP_TIMEOUT_SECS", "-5")
     with (
         patch("monarch_mcp.secure_session.keyring") as mock_kr,
         patch("monarch_mcp.secure_session.MonarchMoney") as mock_cls,
