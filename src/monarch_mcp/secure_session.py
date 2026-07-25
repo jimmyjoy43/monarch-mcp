@@ -16,6 +16,26 @@ logger = logging.getLogger(__name__)
 KEYRING_SERVICE = "com.mcp.monarch-mcp"
 KEYRING_USERNAME = "monarch-token"
 
+# MonarchMoney's own default (10s) is too short for slower mutation calls;
+# allow overriding via env var, falling back to a safer default.
+DEFAULT_TIMEOUT_SECS = 30
+
+
+def _get_client_timeout_secs() -> int:
+    """Resolve the MonarchMoney client timeout from the environment."""
+    raw = os.environ.get("MONARCH_MCP_TIMEOUT_SECS")
+    if raw is None:
+        return DEFAULT_TIMEOUT_SECS
+    try:
+        return int(raw)
+    except ValueError:
+        logger.warning(
+            "Invalid MONARCH_MCP_TIMEOUT_SECS=%r, falling back to %ds",
+            raw,
+            DEFAULT_TIMEOUT_SECS,
+        )
+        return DEFAULT_TIMEOUT_SECS
+
 
 class SecureMonarchSession:
     """Manages Monarch Money sessions securely using the system keyring."""
@@ -67,8 +87,12 @@ class SecureMonarchSession:
             return None
 
         try:
-            client = MonarchMoney(token=token)
-            logger.info("MonarchMoney client created with stored token")
+            timeout_secs = _get_client_timeout_secs()
+            client = MonarchMoney(token=token, timeout=timeout_secs)
+            logger.info(
+                "MonarchMoney client created with stored token (timeout=%ds)",
+                timeout_secs,
+            )
             return client
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to create MonarchMoney client: %s", e)
